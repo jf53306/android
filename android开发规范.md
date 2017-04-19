@@ -63,13 +63,13 @@ public interface IHomePre{
 ```
 ### 包的命名
 包是用来给项目归类的，android中有个applicationId的概念，这个对应的就是我们的包名，在应用商店上架的时候是用来区分不用的应用程序的。
+
     * 主包名：com.公司名英文或缩写.项目名英文或者缩写
     * 分包：按照功能块来命名
         * home 对应主页
         * user 对应用户信息
     *功能块包下面的分包，可以按照开发模式来命名，如modle、presenter、ui或者view之类
     
-###
 
 
 
