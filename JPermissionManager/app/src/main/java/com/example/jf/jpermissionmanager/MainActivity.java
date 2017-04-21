@@ -1,6 +1,7 @@
 package com.example.jf.jpermissionmanager;
 
 import android.Manifest;
+import android.app.DownloadManager;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -17,6 +18,7 @@ public class MainActivity extends AppCompatActivity implements ICallBackPsReques
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
 
         JPermissionManager.getInstance().requestPs(this,this,new String[]{Manifest.permission.CAMERA,Manifest.permission.READ_EXTERNAL_STORAGE});
     }
