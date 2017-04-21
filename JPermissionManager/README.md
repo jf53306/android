@@ -49,6 +49,8 @@ com.android.launcher.permission.UNINSTALL_SHORTCUT
 
 ## 运行时权限
 
+![image](https://github.com/jf53306/android/blob/master/JPermissionManager/run_permission.png)
+
 运行时权限需要与用户发生交互，当用户同意之后，App才能做接下来的事情。简单说一下权限申请的流程
     * 判断权限是否已经申请
     * 如果未申请，申请权限，如果权限已经申请，不会重复申请
