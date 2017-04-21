@@ -6,7 +6,7 @@ toolbar 是5.0后，适配Material风格的控件，除了包含actionbar的功�
 ```java
 <style name="Tb.AppTheme" parent="Theme.AppCompat.NoActionBar">
 ```
-    AppCompat中的主题是像下兼容的，点进去你会发现，v21以上版本的会使用Material的主题
+    AppCompat中的主题是向下兼容的，点进去你会发现，v21以上版本的会使用Material的主题
     
 ```java
     <item name="android:windowBackground">@color/windowBackground</item>
