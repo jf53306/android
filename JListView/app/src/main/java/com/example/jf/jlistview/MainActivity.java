@@ -29,4 +29,8 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
+
+    public void openAutoHind(View view){
+        startActivity(new Intent(this,AutoHindBarActivity.class));
+    }
 }

@@ -3,9 +3,14 @@ package com.example.jf.jlistview.jnestrefreshview.impl;
 import android.content.Context;
 import android.support.annotation.Nullable;
 import android.support.annotation.Px;
+import android.support.annotation.Size;
+import android.support.v4.view.NestedScrollingChild;
+import android.support.v4.view.NestedScrollingChildHelper;
 import android.support.v4.view.NestedScrollingParent;
+import android.support.v4.view.NestedScrollingParentHelper;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.ScrollerCompat;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
@@ -22,7 +27,7 @@ import com.example.jf.jlistview.jnestrefreshview.IViewNestRefresh;
  *
  */
 
-public abstract class JNestRefreshView extends LinearLayout implements NestedScrollingParent,IViewNestRefresh {
+public abstract class JNestRefreshView extends LinearLayout implements NestedScrollingParent,NestedScrollingChild,IViewNestRefresh {
 
     public static final int ST_TOP_SHOW_REFRESHING=10;
     public static final int ST_TOP_SHOW_DRAG=11;
@@ -42,6 +47,11 @@ public abstract class JNestRefreshView extends LinearLayout implements NestedScr
     private FrameLayout botView;
     private FrameLayout bodyView;
     private RecyclerView listView;
+
+    private NestedScrollingChildHelper nsChildHelper;
+    private NestedScrollingParentHelper nsParentHelper;
+
+    private final int[] mParentOffsetInWindow = new int[2];
 
     private OnRefreshListener refreshListener;
 
@@ -97,6 +107,10 @@ public abstract class JNestRefreshView extends LinearLayout implements NestedScr
         if (botChild!=null){
             botView.addView(botChild,new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,topHeight));
         }
+
+        nsChildHelper=new NestedScrollingChildHelper(this);
+        nsParentHelper=new NestedScrollingParentHelper(this);
+        setNestedScrollingEnabled(true);
     }
 
     public int getTopHeight(){
@@ -112,7 +126,7 @@ public abstract class JNestRefreshView extends LinearLayout implements NestedScr
 
         if (mScroller.computeScrollOffset()){
             scrollTo(mScroller.getCurrX(),mScroller.getCurrY());
-            postInvalidate();
+            invalidate();
         }
 
 //        super.computeScroll();
@@ -263,12 +277,13 @@ public abstract class JNestRefreshView extends LinearLayout implements NestedScr
 
     @Override
     public boolean onStartNestedScroll(View child, View target, int nestedScrollAxes) {
-        return (nestedScrollAxes& ViewCompat.SCROLL_AXIS_VERTICAL)!=0;
+        return true;//(nestedScrollAxes& ViewCompat.SCROLL_AXIS_VERTICAL)!=0
     }
 
     @Override
     public void onNestedScrollAccepted(View child, View target, int nestedScrollAxes) {
-
+        nsParentHelper.onNestedScrollAccepted(child,target,nestedScrollAxes);
+        startNestedScroll(nestedScrollAxes);
     }
 
     //call when touch down and up
@@ -278,7 +293,12 @@ public abstract class JNestRefreshView extends LinearLayout implements NestedScr
 //            reset();
 //            return;
 //        }
+        nsParentHelper.onStopNestedScroll(target);
+
+        stopNestedScroll();
+
         if (st==ST_NORMAL){
+
             return;
         }
 
@@ -317,13 +337,17 @@ public abstract class JNestRefreshView extends LinearLayout implements NestedScr
 
     @Override
     public void onNestedScroll(View target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed) {
-
+        // Dispatch up to the nested parent first
+        dispatchNestedScroll(dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed,
+                mParentOffsetInWindow);
 
     }
 
     //ViewCompat.canScrollVertically(target, direction)  direction:-1 scroll down,1 scroll up.
     @Override
     public void onNestedPreScroll(View target, int dx, int dy, int[] consumed) {
+        dispatchNestedPreScroll(dx-consumed[0],dy-consumed[1],consumed,mParentOffsetInWindow);
+
         final boolean showTopView=!ViewCompat.canScrollVertically(target, -1)&&(dy<0||getScrollY()<0);
         final boolean showBotView=!ViewCompat.canScrollVertically(target, 1)&&(getScrollY()>0||dy>0);
         int offset=dy;
@@ -352,11 +376,14 @@ public abstract class JNestRefreshView extends LinearLayout implements NestedScr
             consumed[1]=offset;
             botDrag(offset,getScrollY());
         }
+
+
     }
 
     @Override
     public boolean onNestedFling(View target, float velocityX, float velocityY, boolean consumed) {
 //        Log.e("consumed",":"+consumed);
+        dispatchNestedFling(velocityX,velocityY,consumed);
         return false;
     }
 
@@ -377,6 +404,7 @@ public abstract class JNestRefreshView extends LinearLayout implements NestedScr
             return true;
         }
 
+        dispatchNestedPreFling(velocityX,velocityY);
         return false;
     }
 
@@ -386,52 +414,54 @@ public abstract class JNestRefreshView extends LinearLayout implements NestedScr
     }
 
 
-
-
-
-//    //deal ui
-//    @Override
-//    public void topDrag(int dy, int offset) {
-//
-//    }
-//
-//    @Override
-//    public void topRefresh() {
-//
-//    }
-//
-//    @Override
-//    public void topFinished() {
-//
-//    }
-//
-//    @Override
-//    public void botDrag(int dy, int offset) {
-//
-//    }
-//
-//    @Override
-//    public void botRefresh() {
-//
-//    }
-//
-//    @Override
-//    public void botFinished() {
-//
-//    }
-//
-//    @Override
-//    public void topRefreshCancle() {
-//
-//    }
-//
-//    @Override
-//    public void botRefreshCancle() {
-//
-//    }
-
     public void setOnRefreshListener(OnRefreshListener refreshListener){
         this.refreshListener=refreshListener;
+    }
+
+
+    @Override
+    public void setNestedScrollingEnabled(boolean enabled) {
+        nsChildHelper.setNestedScrollingEnabled(enabled);
+    }
+
+    @Override
+    public boolean isNestedScrollingEnabled() {
+        return listView.isNestedScrollingEnabled();
+    }
+
+    @Override
+    public boolean startNestedScroll(int axes) {
+        return nsChildHelper.startNestedScroll(axes);
+    }
+
+    @Override
+    public void stopNestedScroll() {
+        nsChildHelper.stopNestedScroll();
+    }
+
+    @Override
+    public boolean hasNestedScrollingParent() {
+        return nsChildHelper.hasNestedScrollingParent();
+    }
+
+    @Override
+    public boolean dispatchNestedScroll(int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed, @Nullable @Size(value = 2) int[] offsetInWindow) {
+        return nsChildHelper.dispatchNestedScroll(dxConsumed,dyConsumed,dxUnconsumed,dyUnconsumed,offsetInWindow);
+    }
+
+    @Override
+    public boolean dispatchNestedPreScroll(int dx, int dy, @Nullable @Size(value = 2) int[] consumed, @Nullable @Size(value = 2) int[] offsetInWindow) {
+        return nsChildHelper.dispatchNestedPreScroll(dx, dy, consumed, offsetInWindow);
+    }
+
+    @Override
+    public boolean dispatchNestedFling(float velocityX, float velocityY, boolean consumed) {
+        return nsChildHelper.dispatchNestedFling(velocityX, velocityY, consumed);
+    }
+
+    @Override
+    public boolean dispatchNestedPreFling(float velocityX, float velocityY) {
+        return nsChildHelper.dispatchNestedPreFling(velocityX, velocityY);
     }
 
     public interface OnRefreshListener{
